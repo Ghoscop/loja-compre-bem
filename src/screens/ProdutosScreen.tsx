@@ -9,9 +9,15 @@ StyleSheet,
 
 import { produtos, Produto } from '../data/Produtos';
 
-function ProdutoItem({ produto }: { produto: Produto }) {
+function ProdutoItem({
+produto,
+navigation,
+}: {
+produto: Produto;
+navigation: any;
+}) {
 return (
-<TouchableOpacity style={styles.card}>
+<View style={styles.card}>
 
   <Image
     source={{ uri: produto.imagem }}
@@ -40,11 +46,18 @@ return (
       </Text>
 
 
-      <View style={styles.botao}>
+      <TouchableOpacity
+        style={styles.botao}
+        onPress={() => {
+          navigation.navigate('Detalhes', {
+            produto: produto,
+          });
+        }}
+      >
         <Text style={styles.botaoTexto}>
           Ver detalhes
         </Text>
-      </View>
+      </TouchableOpacity>
 
 
     </View>
@@ -53,16 +66,18 @@ return (
   </View>
 
 
-</TouchableOpacity>
+</View>
 
 );
 }
 
-export default function ProdutosScreen() {
+export default function ProdutosScreen({ navigation }: any) {
 return (
 <View style={styles.container}>
 
   <View style={styles.cabecalho}>
+
+
     <Text style={styles.titulo}>
       Loja Compre Bem
     </Text>
@@ -71,6 +86,8 @@ return (
     <Text style={styles.subtitulo}>
       Tudo para sua casa e escritório
     </Text>
+
+
   </View>
 
 
@@ -78,7 +95,10 @@ return (
     data={produtos}
     keyExtractor={(item) => item.id}
     renderItem={({ item }) => (
-      <ProdutoItem produto={item} />
+      <ProdutoItem
+        produto={item}
+        navigation={navigation}
+      />
     )}
     showsVerticalScrollIndicator={false}
     contentContainerStyle={styles.lista}
@@ -91,6 +111,7 @@ return (
 }
 
 const styles = StyleSheet.create({
+
 container: {
 flex: 1,
 backgroundColor: '#F5F7FA',
@@ -188,4 +209,5 @@ color: '#FFFFFF',
 fontSize: 13,
 fontWeight: '700',
 },
+
 });
