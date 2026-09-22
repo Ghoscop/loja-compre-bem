@@ -1,213 +1,341 @@
 import {
-View,
-Text,
-Image,
-FlatList,
-TouchableOpacity,
-StyleSheet,
+  View,
+  Text,
+  Image,
+  FlatList,
+  TouchableOpacity,
+  StyleSheet,
 } from 'react-native';
 
 import { produtos, Produto } from '../data/Produtos';
+import { useLoja } from '../context/LojaContext';
+
+const curtirOn = require('../resources/btn-curtir-on.png');
+const curtirOff = require('../resources/btn-curtir-off.png');
+const carrinhoImg = require('../resources/btn-carrinho.png');
 
 function ProdutoItem({
-produto,
-navigation,
+  produto,
+  navigation,
 }: {
-produto: Produto;
-navigation: any;
+  produto: Produto;
+  navigation: any;
 }) {
-return (
-<View style={styles.card}>
+  const {
+    alternarFavorito,
+    estaFavoritado,
+    adicionarCarrinho,
+    estaNoCarrinho,
+  } = useLoja();
 
-  <Image
-    source={{ uri: produto.imagem }}
-    style={styles.imagem}
-  />
+  const favorito = estaFavoritado(produto);
+  const noCarrinho = estaNoCarrinho(produto);
 
+  return (
+    <View style={styles.card}>
 
-  <View style={styles.conteudo}>
+      <Image
+        source={{ uri: produto.imagem }}
+        style={styles.imagem}
+      />
 
+      <View style={styles.conteudo}>
 
-    <Text style={styles.nome} numberOfLines={2}>
-      {produto.nome}
-    </Text>
-
-
-    <Text style={styles.descricao} numberOfLines={2}>
-      {produto.descricao}
-    </Text>
-
-
-    <View style={styles.rodape}>
-
-
-      <Text style={styles.preco}>
-        R$ {produto.preco.toFixed(2).replace('.', ',')}
-      </Text>
-
-
-      <TouchableOpacity
-        style={styles.botao}
-        onPress={() => {
-          navigation.navigate('Detalhes', {
-            produto: produto,
-          });
-        }}
-      >
-        <Text style={styles.botaoTexto}>
-          Ver detalhes
+        <Text style={styles.nome} numberOfLines={2}>
+          {produto.nome}
         </Text>
-      </TouchableOpacity>
 
+        <Text style={styles.descricao} numberOfLines={2}>
+          {produto.descricao}
+        </Text>
 
+        <View style={styles.rodape}>
+
+          <Text style={styles.preco}>
+            R$ {produto.preco.toFixed(2).replace('.', ',')}
+          </Text>
+
+          <View style={styles.botoes}>
+
+            <TouchableOpacity
+              style={styles.botaoIcone}
+              onPress={() => alternarFavorito(produto)}
+            >
+              <Image
+                source={favorito ? curtirOn : curtirOff}
+                style={styles.icone}
+              />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.botaoIcone,
+                noCarrinho && styles.botaoCarrinhoAtivo,
+              ]}
+              onPress={() => adicionarCarrinho(produto)}
+            >
+              <Image
+                source={carrinhoImg}
+                style={styles.icone}
+              />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.botaoDetalhes}
+              onPress={() => {
+                navigation.navigate('Detalhes', {
+                  produto,
+                });
+              }}
+            >
+              <Text style={styles.botaoTexto}>
+                Ver detalhes
+              </Text>
+            </TouchableOpacity>
+
+          </View>
+
+        </View>
+
+      </View>
     </View>
-
-
-  </View>
-
-
-</View>
-
-);
+  );
 }
 
-export default function ProdutosScreen({ navigation }: any) {
-return (
-<View style={styles.container}>
+export default function ProdutosScreen({
+  navigation,
+}: any) {
+  const { favoritos, carrinho } = useLoja();
 
-  <View style={styles.cabecalho}>
+  return (
+    <View style={styles.container}>
 
+      <View style={styles.cabecalho}>
 
-    <Text style={styles.titulo}>
-      Loja Compre Bem
-    </Text>
+        <View style={styles.topo}>
 
+          <View>
+            <Text style={styles.titulo}>
+              Loja Compre Bem
+            </Text>
 
-    <Text style={styles.subtitulo}>
-      Tudo para sua casa e escritório
-    </Text>
+            <Text style={styles.subtitulo}>
+              Tudo para sua casa e escritório
+            </Text>
+          </View>
 
+        </View>
 
-  </View>
+        <View style={styles.menu}>
 
+          <TouchableOpacity
+            style={styles.menuBotao}
+            onPress={() =>
+              navigation.navigate('Favoritos')
+            }
+          >
+            <Image
+              source={curtirOn}
+              style={styles.menuIcone}
+            />
 
-  <FlatList
-    data={produtos}
-    keyExtractor={(item) => item.id}
-    renderItem={({ item }) => (
-      <ProdutoItem
-        produto={item}
-        navigation={navigation}
+            <Text style={styles.menuTexto}>
+              Favoritos ({favoritos.length})
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuBotao}
+            onPress={() =>
+              navigation.navigate('Carrinho')
+            }
+          >
+            <Image
+              source={carrinhoImg}
+              style={styles.menuIcone}
+            />
+
+            <Text style={styles.menuTexto}>
+              Carrinho ({carrinho.length})
+            </Text>
+          </TouchableOpacity>
+
+        </View>
+
+      </View>
+
+      <FlatList
+        data={produtos}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <ProdutoItem
+            produto={item}
+            navigation={navigation}
+          />
+        )}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.lista}
       />
-    )}
-    showsVerticalScrollIndicator={false}
-    contentContainerStyle={styles.lista}
-  />
 
-
-</View>
-
-);
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
 
-container: {
-flex: 1,
-backgroundColor: '#F5F7FA',
-},
+  container: {
+    flex: 1,
+    backgroundColor: '#F5F7FA',
+  },
 
-cabecalho: {
-paddingHorizontal: 20,
-paddingTop: 55,
-paddingBottom: 20,
-backgroundColor: '#FFFFFF',
-},
+  cabecalho: {
+    paddingHorizontal: 20,
+    paddingTop: 55,
+    paddingBottom: 15,
+    backgroundColor: '#FFFFFF',
+  },
 
-titulo: {
-fontSize: 30,
-fontWeight: '800',
-color: '#1B3A5C',
-},
+  topo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
 
-subtitulo: {
-fontSize: 15,
-color: '#667085',
-marginTop: 5,
-},
+  titulo: {
+    fontSize: 30,
+    fontWeight: '800',
+    color: '#1B3A5C',
+  },
 
-lista: {
-padding: 20,
-paddingBottom: 30,
-},
+  subtitulo: {
+    fontSize: 15,
+    color: '#667085',
+    marginTop: 5,
+  },
 
-card: {
-backgroundColor: '#FFFFFF',
-borderRadius: 20,
-marginBottom: 18,
-overflow: 'hidden',
+  menu: {
+    flexDirection: 'row',
+    marginTop: 18,
+    gap: 10,
+  },
 
-shadowColor: '#1B3A5C',
-shadowOffset: {
-  width: 0,
-  height: 4,
-},
-shadowOpacity: 0.10,
-shadowRadius: 10,
+  menuBotao: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F5F7FA',
+    borderRadius: 12,
+    paddingVertical: 10,
+  },
 
+  menuIcone: {
+    width: 24,
+    height: 24,
+    resizeMode: 'contain',
+    marginRight: 7,
+  },
 
-elevation: 5,
+  menuTexto: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1B3A5C',
+  },
 
-},
+  lista: {
+    padding: 20,
+    paddingBottom: 30,
+  },
 
-imagem: {
-width: '100%',
-height: 190,
-resizeMode: 'cover',
-backgroundColor: '#EEF1F4',
-},
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    marginBottom: 18,
+    overflow: 'hidden',
 
-conteudo: {
-padding: 16,
-},
+    shadowColor: '#1B3A5C',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.10,
+    shadowRadius: 10,
 
-nome: {
-fontSize: 19,
-fontWeight: '800',
-color: '#1B3A5C',
-},
+    elevation: 5,
+  },
 
-descricao: {
-fontSize: 14,
-color: '#667085',
-lineHeight: 20,
-marginTop: 7,
-},
+  imagem: {
+    width: '100%',
+    height: 190,
+    resizeMode: 'cover',
+    backgroundColor: '#EEF1F4',
+  },
 
-rodape: {
-flexDirection: 'row',
-alignItems: 'center',
-justifyContent: 'space-between',
-marginTop: 16,
-},
+  conteudo: {
+    padding: 16,
+  },
 
-preco: {
-fontSize: 21,
-fontWeight: '800',
-color: '#2E7D32',
-},
+  nome: {
+    fontSize: 19,
+    fontWeight: '800',
+    color: '#1B3A5C',
+  },
 
-botao: {
-backgroundColor: '#1B3A5C',
-paddingHorizontal: 14,
-paddingVertical: 10,
-borderRadius: 12,
-},
+  descricao: {
+    fontSize: 14,
+    color: '#667085',
+    lineHeight: 20,
+    marginTop: 7,
+  },
 
-botaoTexto: {
-color: '#FFFFFF',
-fontSize: 13,
-fontWeight: '700',
-},
+  rodape: {
+    marginTop: 16,
+  },
+
+  preco: {
+    fontSize: 21,
+    fontWeight: '800',
+    color: '#2E7D32',
+    marginBottom: 12,
+  },
+
+  botoes: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+
+  botaoIcone: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: '#F5F7FA',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  botaoCarrinhoAtivo: {
+    backgroundColor: '#E8F5E9',
+  },
+
+  icone: {
+    width: 25,
+    height: 25,
+    resizeMode: 'contain',
+  },
+
+  botaoDetalhes: {
+    flex: 1,
+    backgroundColor: '#1B3A5C',
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+
+  botaoTexto: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
 
 });
