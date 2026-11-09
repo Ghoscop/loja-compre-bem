@@ -1,0 +1,51 @@
+export type Produto = {
+  id: string;
+  nome: string;
+  preco: number;
+  descricao: string;
+  imagem: string;
+  categoria: string;
+  quantidade: number;
+};
+
+export type ProdutoApi = {
+  produtoId?: string;
+  id?: string;
+  nome: string;
+  preco: number | string;
+  descricao?: string | null;
+  imagem?: string | null;
+  categoria?: string | null;
+  quantidade?: number | null;
+};
+
+export type ProdutoRequest = {
+  nome: string;
+  descricao: string;
+  preco: number;
+  categoria: string;
+  imagem: string;
+  quantidade: number;
+};
+
+export type RespostaPaginada<T> = {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;
+  first?: boolean;
+  last?: boolean;
+};
+
+export function converterProduto(produto: ProdutoApi): Produto {
+  return {
+    id: String(produto.produtoId ?? produto.id ?? ''),
+    nome: produto.nome ?? '',
+    preco: Number(produto.preco ?? 0),
+    descricao: produto.descricao ?? '',
+    imagem: produto.imagem ?? '',
+    categoria: produto.categoria ?? '',
+    quantidade: Number(produto.quantidade ?? 0),
+  };
+}
