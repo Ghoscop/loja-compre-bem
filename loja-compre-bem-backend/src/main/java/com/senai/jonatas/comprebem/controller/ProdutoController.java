@@ -6,15 +6,15 @@ import com.senai.jonatas.comprebem.service.ProdutoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping(value = "api/v1/produtos")
+@RequestMapping("/api/v1/produtos")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
 public class ProdutoController {
@@ -26,16 +26,29 @@ public class ProdutoController {
         return produtoService.findAll();
     }
 
-    @GetMapping("/{id}")
-    public ProdutoResponseDTO findById(@PathVariable UUID id) {
-        return produtoService.findById(id);
-    }
-//localhost:8080/api/v1/produtos/filtro?filtro=nomeDoProduto&page=0&size=10&sort=nome,asc
     @GetMapping("/filtro")
     public Page<ProdutoResponseDTO> findByFiltro(
             @RequestParam(defaultValue = "") String filtro,
-            @PageableDefault(size = 20, sort = "nome") Pageable pageable) {
-        return produtoService.findByFiltro(filtro, pageable);
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+
+        if (page < 0) {
+            throw new IllegalArgumentException("O número da página não pode ser negativo.");
+        }
+        if (size < 1) {
+            throw new IllegalArgumentException("O tamanho da página deve ser maior que zero.");
+        }
+
+        int tamanhoSeguro = Math.min(size, 50);
+        return produtoService.findByFiltro(
+                filtro,
+                PageRequest.of(page, tamanhoSeguro, Sort.by("nome").ascending())
+        );
+    }
+
+    @GetMapping("/{id}")
+    public ProdutoResponseDTO findById(@PathVariable UUID id) {
+        return produtoService.findById(id);
     }
 
     @PostMapping
