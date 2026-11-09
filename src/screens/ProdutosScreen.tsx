@@ -5,9 +5,12 @@ import {
   FlatList,
   TouchableOpacity,
   StyleSheet,
+  ActivityIndicator,
 } from 'react-native';
+import { useEffect, useState } from 'react';
 
-import { produtos, Produto } from '../data/Produtos';
+import { Produto } from '../data/Produtos';
+import { listarProdutos } from '../services/ProdutoService';
 import { useLoja } from '../context/LojaContext';
 
 const curtirOn = require('../resources/btn-curtir-on.png');
@@ -106,14 +109,60 @@ export default function ProdutosScreen({
   navigation,
 }: any) {
   const { favoritos, carrinho } = useLoja();
+  const [produtos, setProdutos] = useState<Produto[]>([]);
+  const [pagina, setPagina] = useState(0);
+  const [totalPaginas, setTotalPaginas] = useState(0);
+  const [totalProdutos, setTotalProdutos] = useState(0);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState('');
+  const [tentativa, setTentativa] = useState(0);
+
+  useEffect(() => {
+    let ativo = true;
+
+    async function carregarProdutos() {
+      setCarregando(true);
+      setErro('');
+
+      try {
+        const resposta = await listarProdutos(pagina, 20);
+
+        if (ativo) {
+          setProdutos(resposta.content);
+          setTotalPaginas(resposta.totalPages);
+          setTotalProdutos(resposta.totalElements);
+        }
+      } catch (error) {
+        if (ativo) {
+          setProdutos([]);
+          setErro(
+            error instanceof Error
+              ? error.message
+              : 'Não foi possível carregar os produtos.'
+          );
+        }
+      } finally {
+        if (ativo) {
+          setCarregando(false);
+        }
+      }
+    }
+
+    carregarProdutos();
+
+    return () => {
+      ativo = false;
+    };
+  }, [pagina, tentativa]);
+
+  function tentarNovamente() {
+    setTentativa((valor) => valor + 1);
+  }
 
   return (
     <View style={styles.container}>
-
       <View style={styles.cabecalho}>
-
         <View style={styles.topo}>
-
           <View>
             <Text style={styles.titulo}>
               Loja Compre Bem
@@ -123,22 +172,14 @@ export default function ProdutosScreen({
               Tudo para sua casa e escritório
             </Text>
           </View>
-
         </View>
 
         <View style={styles.menu}>
-
           <TouchableOpacity
             style={styles.menuBotao}
-            onPress={() =>
-              navigation.navigate('Favoritos')
-            }
+            onPress={() => navigation.navigate('Favoritos')}
           >
-            <Image
-              source={curtirOn}
-              style={styles.menuIcone}
-            />
-
+            <Image source={curtirOn} style={styles.menuIcone} />
             <Text style={styles.menuTexto}>
               Favoritos ({favoritos.length})
             </Text>
@@ -146,37 +187,91 @@ export default function ProdutosScreen({
 
           <TouchableOpacity
             style={styles.menuBotao}
-            onPress={() =>
-              navigation.navigate('Carrinho')
-            }
+            onPress={() => navigation.navigate('Carrinho')}
           >
-            <Image
-              source={carrinhoImg}
-              style={styles.menuIcone}
-            />
-
+            <Image source={carrinhoImg} style={styles.menuIcone} />
             <Text style={styles.menuTexto}>
               Carrinho ({carrinho.length})
             </Text>
           </TouchableOpacity>
-
         </View>
 
+        {!carregando && !erro && (
+          <Text style={styles.contagem}>
+            {totalProdutos} produtos disponíveis
+          </Text>
+        )}
       </View>
 
-      <FlatList
-        data={produtos}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <ProdutoItem
-            produto={item}
-            navigation={navigation}
+      {carregando ? (
+        <View style={styles.estado}>
+          <ActivityIndicator size="large" color="#1B3A5C" />
+          <Text style={styles.estadoTexto}>Carregando produtos...</Text>
+        </View>
+      ) : erro ? (
+        <View style={styles.estado}>
+          <Text style={styles.erroTitulo}>Não foi possível carregar</Text>
+          <Text style={styles.estadoTexto}>{erro}</Text>
+          <TouchableOpacity
+            style={styles.tentarNovamente}
+            onPress={tentarNovamente}
+          >
+            <Text style={styles.botaoTexto}>Tentar novamente</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <>
+          <FlatList
+            data={produtos}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <ProdutoItem produto={item} navigation={navigation} />
+            )}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.lista}
+            ListEmptyComponent={
+              <Text style={styles.estadoTexto}>
+                Nenhum produto encontrado.
+              </Text>
+            }
           />
-        )}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.lista}
-      />
 
+          {totalPaginas > 1 && (
+            <View style={styles.paginacao}>
+              <TouchableOpacity
+                style={[
+                  styles.botaoPagina,
+                  pagina === 0 && styles.botaoPaginaDesabilitado,
+                ]}
+                disabled={pagina === 0}
+                onPress={() => setPagina((atual) => Math.max(0, atual - 1))}
+              >
+                <Text style={styles.textoPagina}>Anterior</Text>
+              </TouchableOpacity>
+
+              <Text style={styles.indicadorPagina}>
+                Página {pagina + 1} de {totalPaginas}
+              </Text>
+
+              <TouchableOpacity
+                style={[
+                  styles.botaoPagina,
+                  pagina >= totalPaginas - 1 &&
+                    styles.botaoPaginaDesabilitado,
+                ]}
+                disabled={pagina >= totalPaginas - 1}
+                onPress={() =>
+                  setPagina((atual) =>
+                    Math.min(totalPaginas - 1, atual + 1)
+                  )
+                }
+              >
+                <Text style={styles.textoPagina}>Próxima</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </>
+      )}
     </View>
   );
 }
@@ -334,6 +429,77 @@ const styles = StyleSheet.create({
 
   botaoTexto: {
     color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+
+
+  contagem: {
+    marginTop: 12,
+    color: '#667085',
+    fontSize: 13,
+  },
+
+  estado: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 28,
+  },
+
+  estadoTexto: {
+    color: '#667085',
+    fontSize: 15,
+    textAlign: 'center',
+    marginTop: 12,
+    lineHeight: 22,
+  },
+
+  erroTitulo: {
+    color: '#B42318',
+    fontSize: 18,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+
+  tentarNovamente: {
+    marginTop: 18,
+    backgroundColor: '#1B3A5C',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+
+  paginacao: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#EAECF0',
+  },
+
+  botaoPagina: {
+    backgroundColor: '#1B3A5C',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+
+  botaoPaginaDesabilitado: {
+    backgroundColor: '#98A2B3',
+  },
+
+  textoPagina: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 12,
+  },
+
+  indicadorPagina: {
+    color: '#344054',
     fontSize: 13,
     fontWeight: '700',
   },
