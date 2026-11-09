@@ -1,10 +1,12 @@
+
 export type Produto = {
   id: string;
   nome: string;
   preco: number;
   descricao: string;
   imagem: string;
-  categoria?: string;
+  categoria: string;
+  quantidade: number;
 };
 
 export type ProdutoApi = {
@@ -14,6 +16,7 @@ export type ProdutoApi = {
   descricao: string;
   imagem: string | null;
   categoria: string;
+  quantidade: number;
 };
 
 export type RespostaPaginada<T> = {
@@ -22,8 +25,8 @@ export type RespostaPaginada<T> = {
   totalPages: number;
   size: number;
   number: number;
-  first?: boolean;
-  last?: boolean;
+  first: boolean;
+  last: boolean;
 };
 
 export function converterProduto(produto: ProdutoApi): Produto {
@@ -31,8 +34,9 @@ export function converterProduto(produto: ProdutoApi): Produto {
     id: produto.produtoId,
     nome: produto.nome,
     preco: Number(produto.preco),
-    descricao: produto.descricao,
+    descricao: produto.descricao ?? '',
     imagem: produto.imagem ?? '',
-    categoria: produto.categoria,
+    categoria: produto.categoria ?? '',
+    quantidade: Number(produto.quantidade ?? 0),
   };
 }
